@@ -1,7 +1,6 @@
 package org.rainy.log4zy;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -19,6 +18,8 @@ public class Logger {
      * 日志输出对象
      */
     private final LogWriter logWriter;
+    
+    private Boolean immediate = null;
 
     /**
      * 日志队列
@@ -32,29 +33,28 @@ public class Logger {
     }
 
     public void debug(String content, Object... arguments) {
-        doLog(content, Level.DEBUG, false, arguments);
+        doLog(content, Level.DEBUG, arguments);
     }
     
     public void info(String content, Object... arguments) {
-        doLog(content, Level.INFO, false, arguments);
+        doLog(content, Level.INFO, arguments);
     }
     
     public void warn(String content, Object... arguments) {
-        doLog(content, Level.WARN, false, arguments);
+        doLog(content, Level.WARN, arguments);
     }
 
     public void error(String content, Object... arguments) {
-        doLog(content, Level.ERROR, false, arguments);
+        doLog(content, Level.ERROR, arguments);
     }
 
     /**
      * 
      * @param originContent 日志原文
      * @param level 日志等级
-     * @param immediate 是否直接写入
      * @param arguments 参数列表
      */
-    private void doLog(String originContent, Level level, boolean immediate, Object... arguments) {
+    private void doLog(String originContent, Level level, Object... arguments) {
         if (level.getLevel() < leastLevel.getLevel()) {
             return;
         }
@@ -67,6 +67,18 @@ public class Logger {
         String kind = traceElement.getMethodName();
         int code = traceElement.getLineNumber();
         
+        if (immediate == null) {
+            try {
+                Class<?> clazz = Class.forName(domain);
+                Log4zy log4zy = clazz.getAnnotation(Log4zy.class);
+                if (log4zy != null) {
+                    immediate = log4zy.immediate();
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
         Throwable throwable = null;
         if (arguments.length > 0) {
             Object argument = arguments[arguments.length - 1];
@@ -86,9 +98,8 @@ public class Logger {
                 .throwable(throwable)
                 .build();
         // 直接写入
-        if (immediate) {
-            LogAnalyzer logAnalyzer = LogAnalyzer.analyzer(logDetail);
-            String content = logAnalyzer.translation();
+        if (immediate != null && immediate) {
+            String content = LogAnalyzer.analyzer(logDetail);
             logDetail.setContent(content);
             logWriter.write(logDetail);
             return;

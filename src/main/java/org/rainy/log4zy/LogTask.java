@@ -21,12 +21,11 @@ public class LogTask implements Runnable {
         LogDetail logDetail = null;
         try {
             logDetail = this.logQueue.take();
-            LogAnalyzer logAnalyzer = LogAnalyzer.analyzer(logDetail);
-            logDetail.setContent(logAnalyzer.translation());
+            String content = LogAnalyzer.analyzer(logDetail);
+            logDetail.setContent(content);
             logWriter.write(logDetail);
         } catch (Throwable e) {
             logWriter.exceptionHandler(logDetail, e);
         }
-
     }
 }

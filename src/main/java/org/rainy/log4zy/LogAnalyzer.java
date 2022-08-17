@@ -9,17 +9,21 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 日志表达式分析 
+ * 日志表达式分析
  * <br>
  * $-输入参数对象，%-输出参数对象，#-内置参数
  * <br>
  * 如：${username}在#{time}审核${name}的申请，审核结果：%{result}
  * <br>
+ *
  * @author wt1734
  * create at 2022/8/12 0012 15:05
  */
@@ -32,35 +36,24 @@ public class LogAnalyzer {
     private static final String UNDEFINED = "undefined";
     private static final String PATTERN = "[$,#,%]?\\{[^\\}]*(\\.[^\\}]+)*\\}|\\%\\{\\}";
     private static final Map<String, LogFunction<Object[], Object, Object, Throwable, Object>> logFunctions = LogPrincipal.defaultFunctions();
-    private static final Map<String, LogAnalyzer> logAnalyzers = new HashMap<>();
     private static LogDetail _logDetail;
-    
+
     private final Segment segment;
-    
+
     private LogAnalyzer(Segment segment) {
         this.segment = segment;
     }
-    
-    public static LogAnalyzer analyzer(LogDetail logDetail) {
+
+    public static String analyzer(LogDetail logDetail) {
         _logDetail = logDetail;
-        String instanceKey = String.format("%s.%s.%s", logDetail.getDomain(), logDetail.getKind(), logDetail.getLine());
-
-        synchronized (logAnalyzers) {
-            LogAnalyzer logAnalyzer = logAnalyzers.get(instanceKey);
-            if (logAnalyzer != null) {
-                return logAnalyzer;
-            }
-
-            Segment segment = analyze(logDetail.getOriginContent());
-            logAnalyzer = new LogAnalyzer(segment);
-            logAnalyzers.put(instanceKey, logAnalyzer);
-            return logAnalyzer;
-        }
-
+        Segment segment = analyze(logDetail.getOriginContent());
+        LogAnalyzer logAnalyzer = new LogAnalyzer(segment);
+        return logAnalyzer.translation();
     }
 
     /**
      * 提取日志分段信息
+     *
      * @param originContent 日志原文
      * @return {@link Segment}
      */
@@ -79,7 +72,7 @@ public class LogAnalyzer {
             String sentence = originContent.substring(sentenceIndex, start);
             sentences.add(sentence);
             sentenceIndex = end;
-            
+
             parameters.add(extractionParameter(parameterStr, index));
 
             ParameterType type = ParameterType.get(parameterStr.charAt(0));
@@ -87,11 +80,17 @@ public class LogAnalyzer {
                 index++;
             }
         }
+
+        if (sentenceIndex < originContent.length()) {
+            sentences.add(originContent.substring(sentenceIndex));
+        }
+
         return new Segment(sentences.toArray(new String[0]), parameters.toArray(new Parameter[0]));
     }
 
     /**
      * 翻译日志原文
+     *
      * @return
      */
     public String translation() {
@@ -116,12 +115,12 @@ public class LogAnalyzer {
             // 基本类型直接toString()
             if (
                     clazz == String.class || clazz == Integer.class || clazz == Long.class
-                    || clazz == Double.class || clazz == Float.class || clazz == Short.class
-                    || clazz == Character.class || clazz == Boolean.class
+                            || clazz == Double.class || clazz == Float.class || clazz == Short.class
+                            || clazz == Character.class || clazz == Boolean.class
             ) {
                 return val.toString();
             }
-            
+
             if (val instanceof LocalDateTime) {
                 value = DATE_TIME_FORMATTER.format((LocalDateTime) val);
             } else if (val instanceof LocalDate) {
@@ -139,8 +138,9 @@ public class LogAnalyzer {
 
     /**
      * 提取参数信息
+     *
      * @param parameterStr 参数表达式
-     * @param index 参数索引
+     * @param index        参数索引
      * @return 返回参数名称，比如入参：${username}，出参：username
      */
     private static Parameter extractionParameter(String parameterStr, int index) {
@@ -169,13 +169,13 @@ public class LogAnalyzer {
     private static class Segment {
         private final String[] sentence;
         private final Parameter[] parameters;
-        
+
         public Segment(String[] sentence, Parameter[] parameters) {
             this.sentence = sentence;
             this.parameters = parameters;
         }
     }
-    
+
     private static class Parameter {
         private final int index;
         private final String name;
@@ -199,7 +199,7 @@ public class LogAnalyzer {
         IN,
         OUT,
         INNER;
-        
+
         public static ParameterType get(char mark) {
             switch (mark) {
                 case '$':
@@ -211,12 +211,12 @@ public class LogAnalyzer {
             }
             return null;
         }
-        
+
         public static ParameterType getOrDefault(char mark, ParameterType defaultType) {
             ParameterType parameterType = get(mark);
-            return parameterType == null ? defaultType : parameterType; 
+            return parameterType == null ? defaultType : parameterType;
         }
-        
+
     }
-    
+
 }
