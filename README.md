@@ -16,12 +16,32 @@ public class LoggerController {
     
     @GetMapping(value = "/log")
     public String log() {
-        // IDEA会提示`Cannot resolve symbol 'logger'`找不到变量，不过还是可以正常运行。
+        // IDEA会提示`Cannot resolve symbol 'logger'`，不过还是可以正常运行。
         logger.info("${name}在#{time}审批了${name}的申请，审批结果：%{result}", "张三", "李四", true);
-        return loggerService.log();
+        // 执行成功后会打印出如下信息：
+        // 2022-08-17 11:54:15.186  INFO --- [log4zy-1] org.rainy.example.controller.LoggerController.log(22): [张三]在[2022-08-17 11:54:15]审批了[李四]的申请，审批结果：[true]
+        return "hello";
     }
 
 }
 ```
 
+
+也可以通过实现`LogWriter`来改变日志输出方式（默认输出方式参考：`DefaultLogWriter`类），比如：
+```java
+public class DBLogWriter implements LogWriter  {
+        
+    @Override
+    public void write(LogDetail logDetail) {
+        // 保存到数据库中
+        saveLog(logDetail)
+    }
+
+    @Override
+    public void exceptionHandler(LogDetail logDetail, Throwable throwable) {
+        System.err.println(logDetail.getContent());
+    }
+    
+}
+```
 
