@@ -7,7 +7,8 @@ private Logger logger;
 
 例如：
 ```java
-@Log4zy
+// @Log4zy(immediate = true)  同步写入（会影响整体执行效率）
+@Log4zy // 异步写入
 @RestController
 public class LoggerController {
     
@@ -27,13 +28,15 @@ public class LoggerController {
 ```
 
 
-也可以通过实现`LogWriter`来改变日志输出方式（默认输出方式参考：`DefaultLogWriter`类），比如：
+也可以通过实现`LogWriter`来改变日志输出方式（默认输出方式参考：`DefaultLogWriter`类）。
+可以参考如下写法：
 ```java
+// 将日志保存到数据库
 public class DBLogWriter implements LogWriter  {
         
     @Override
     public void write(LogDetail logDetail) {
-        // 保存到数据库中
+        // 写库
         saveLog(logDetail)
     }
 
