@@ -7,10 +7,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author wt1734
- * create at 2022/8/16 0016 14:06
- */
 public class LogPrincipal {
 
     private static final String TIME = "time"; 

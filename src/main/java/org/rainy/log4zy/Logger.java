@@ -3,10 +3,6 @@ package org.rainy.log4zy;
 import java.time.LocalDateTime;
 import java.util.concurrent.BlockingQueue;
 
-/**
- * @author wt1734
- * create at 2022/8/12 0012 14:19
- */
 public class Logger {
 
     /**
@@ -104,7 +100,6 @@ public class Logger {
             logWriter.write(logDetail);
             return;
         }
-        
         // 异步写入
         if (!logQueue.offer(logDetail)) {
             logWriter.exceptionHandler(logDetail, throwable != null ? throwable : new RuntimeException("log data can not be put task queue!"));

@@ -29,9 +29,6 @@ import java.util.Set;
  * }
  * </pre>
  * </p>
- *
- * @author wt1734
- * @since  2022/8/16 0016 14:54
  */
 @SupportedAnnotationTypes("org.rainy.log4zy.Log4zy")    // 要监听的注解
 @SupportedSourceVersion(SourceVersion.RELEASE_8)    // 要对什么版本的源代码做处理

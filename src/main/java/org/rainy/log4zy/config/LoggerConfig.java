@@ -16,8 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * @author wt1734
- * create at 2022/8/16 0016 17:17
+ * 日志相关配置
  */
 @Configuration
 @ConfigurationProperties(prefix = "log4zy")

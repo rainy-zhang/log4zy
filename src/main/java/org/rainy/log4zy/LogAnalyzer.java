@@ -2,6 +2,7 @@ package org.rainy.log4zy;
 
 import org.rainy.log4zy.stuff.LogPrincipal;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -9,10 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,9 +21,6 @@ import java.util.regex.Pattern;
  * <br>
  * 如：${username}在#{time}审核${name}的申请，审核结果：%{result}
  * <br>
- *
- * @author wt1734
- * create at 2022/8/12 0012 15:05
  */
 public class LogAnalyzer {
 
@@ -89,54 +84,6 @@ public class LogAnalyzer {
     }
 
     /**
-     * 翻译日志原文
-     *
-     * @return
-     */
-    public String translation() {
-        StringBuilder content = new StringBuilder();
-        String[] sentences = this.segment.sentence;
-        Parameter[] parameters = this.segment.parameters;
-        for (int i = 0; i < sentences.length; i++) {
-            content.append(sentences[i]);
-            if (i >= parameters.length) {
-                continue;
-            }
-            String value = toString(parameters[i].value);
-            content.append("[").append(value).append("]");
-        }
-        return content.toString();
-    }
-
-    private String toString(Object val) {
-        String value = UNDEFINED;
-        try {
-            Class<?> clazz = val.getClass();
-            // 基本类型直接toString()
-            if (
-                    clazz == String.class || clazz == Integer.class || clazz == Long.class
-                            || clazz == Double.class || clazz == Float.class || clazz == Short.class
-                            || clazz == Character.class || clazz == Boolean.class
-            ) {
-                return val.toString();
-            }
-
-            if (val instanceof LocalDateTime) {
-                value = DATE_TIME_FORMATTER.format((LocalDateTime) val);
-            } else if (val instanceof LocalDate) {
-                value = DATE_FORMATTER.format((LocalDate) val);
-            } else if (val instanceof Date) {
-                value = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format((Date) val);
-            } else if (val instanceof BigDecimal) {
-                value = NUMBER_FORMAT.format(val);
-            }
-        } finally {
-            SIMPLE_DATE_FORMAT_THREAD_LOCAL.remove();
-        }
-        return value;
-    }
-
-    /**
      * 提取参数信息
      *
      * @param parameterStr 参数表达式
@@ -165,6 +112,116 @@ public class LogAnalyzer {
         }
         return new Parameter(index, name, type, _logDetail.getArguments()[index]);
     }
+
+    /**
+     * 翻译日志原文
+     * @return 日志译文
+     */
+    public String translation() {
+        StringBuilder content = new StringBuilder();
+        String[] sentences = this.segment.sentence;
+        Parameter[] parameters = this.segment.parameters;
+        for (int i = 0; i < sentences.length; i++) {
+            content.append(sentences[i]);
+            if (i >= parameters.length) {
+                continue;
+            }
+            String value = getStringValue(parameters[i].value);
+            content.append("【").append(value).append("】");
+        }
+        return content.toString();
+    }
+
+    /**
+     * 获取字符串类型的参数
+     * @param value 原参数
+     * @return stringValue
+     */
+    private String getStringValue(Object value) {
+        String stringValue;
+        try {
+            Class<?> clazz = value.getClass();
+            // 基本类型直接toString()
+            if (isPrimitive(clazz)) {
+                return value.toString();
+            }
+
+            if (value instanceof LocalDateTime) {
+                stringValue = DATE_TIME_FORMATTER.format((LocalDateTime) value);
+            } else if (value instanceof LocalDate) {
+                stringValue = DATE_FORMATTER.format((LocalDate) value);
+            } else if (value instanceof Date) {
+                stringValue = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format((Date) value);
+            } else if (value instanceof BigDecimal) {
+                stringValue = NUMBER_FORMAT.format(value);
+            } else if (value instanceof List) {
+                List<?> list = (List<?>) value;
+                StringBuilder builder = new StringBuilder("[");
+                for (Object o : list) {
+                    builder.append(toString(o)).append(",");
+                }
+                builder.deleteCharAt(builder.length()-1);
+                builder.append("]");
+                stringValue = builder.toString();
+            } else if (value instanceof Map) {
+                Map<?,?> map = (Map<?, ?>) value;
+                StringBuilder builder = new StringBuilder("{");
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    builder.append(toString(entry.getKey())).append(":").append(toString(entry.getValue())).append(",");
+                }
+                builder.deleteCharAt(builder.length()-1);
+                builder.append("}");
+                stringValue = builder.toString();
+            } else {
+                stringValue = toString(value);
+            }
+        } finally {
+            SIMPLE_DATE_FORMAT_THREAD_LOCAL.remove();
+        }
+        return stringValue;
+    }
+    
+    private List<Field> getFields(Class<?> clazz) {
+        List<Field> fields = new ArrayList<>();
+        while (null != clazz) {
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            clazz = clazz.getSuperclass();
+        }
+        return fields;
+    }
+    
+    private String toString(Object entity) {
+        Class<?> clazz = entity.getClass();
+        if (isPrimitive(clazz)) {
+            return entity.toString();
+        }
+        List<Field> fields = getFields(clazz);
+        StringBuilder builder = new StringBuilder("{");
+        try {
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Class<?> fieldType = field.getType();
+                String fieldName = field.getName();
+                Object fieldValue = field.get(entity);
+                if (!isPrimitive(fieldType)) {
+                    fieldValue = getStringValue(fieldValue);
+                }
+                builder.append(String.format("%s:%s", fieldName, fieldValue)).append(",");
+            }
+            builder.deleteCharAt(builder.length() - 1);
+            builder.append("}");
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return builder.toString();
+    }
+    
+    private boolean isPrimitive(Class<?> clazz) {
+        return clazz == String.class || clazz == Integer.class || clazz == Long.class
+                || clazz == Double.class || clazz == Float.class || clazz == Short.class
+                || clazz == Character.class || clazz == Boolean.class;
+    }
+   
 
     private static class Segment {
         private final String[] sentence;

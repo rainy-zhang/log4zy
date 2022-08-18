@@ -4,8 +4,6 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 日志输出对象
- * @author wt1734
- * create at 2022/8/12 0012 14:46
  */
 public interface LogWriter {
     
@@ -13,6 +11,8 @@ public interface LogWriter {
     
     void write(LogDetail logDetail);
     
-    void exceptionHandler(LogDetail logDetail, Throwable throwable);
+    default void exceptionHandler(LogDetail logDetail, Throwable throwable) {
+        throwable.printStackTrace();
+    }
     
 }

@@ -3,8 +3,7 @@ package org.rainy.log4zy;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * @author wt1734
- * create at 2022/8/16 0016 17:39
+ * 日志线程
  */
 public class LogTask implements Runnable {
     

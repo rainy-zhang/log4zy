@@ -5,9 +5,6 @@ import org.rainy.log4zy.LogWriter;
 
 /**
  * {@link LogWriter}的默认实现
- *
- * @author wt1734
- * create at 2022/8/16 0016 14:12
  */
 public class DefaultLogWriter implements LogWriter {
 
@@ -26,8 +23,4 @@ public class DefaultLogWriter implements LogWriter {
         System.out.println(log);
     }
 
-    @Override
-    public void exceptionHandler(LogDetail logDetail, Throwable throwable) {
-        System.err.println(logDetail.getContent());
-    }
 }

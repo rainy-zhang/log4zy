@@ -5,8 +5,6 @@ import java.time.LocalDateTime;
 
 /**
  * 日志详细信息
- * @author wt1734
- * create at 2022/8/12 0012 14:40
  */
 public class LogDetail {
 
