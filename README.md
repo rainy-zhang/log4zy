@@ -1,5 +1,5 @@
 # log4zy
-添加依赖后，对于标记了`@Log4zy`注解的类会在代码出口处添加以下代码：
+对于标记了`@Log4zy`注解的类会在代码出口处注入以下代码：
 ```java
 @Autowired
 private Logger logger;
