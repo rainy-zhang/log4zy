@@ -1,5 +1,5 @@
 # log4zy
-对于标记了`@Log4zy`注解的类会在代码出口处注入以下代码：
+对于标记了`@Log4zy`注解的类会在代码出口处注入以下代码（由于注入的代码在编译后才生效，idea会提示属性找不到的error，需要安装log4zy-plugin.jar插件）：
 ```java
 @Autowired
 private Logger logger;
