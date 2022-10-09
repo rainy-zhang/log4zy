@@ -48,3 +48,5 @@ public class DBLogWriter implements LogWriter  {
 }
 ```
 
+
+IDEA插件源码：https://github.com/rainy-zhang/log4zy-plugin
